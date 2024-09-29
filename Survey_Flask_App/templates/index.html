@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Professional Survey</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        .survey-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+
+        .question {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #e0f2f1;
+        }
+
+        label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 10px;
+            color: #555;
+        }
+
+        input[type="text"] {
+            width: calc(100% - 20px);
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        #voice-result1, #voice-result2 {
+            display: block;
+            margin-top: 10px;
+            font-style: italic;
+            color: #555;
+        }
+
+        .submit-btn {
+            background-color: #28a745;
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 18px;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .submit-btn:hover {
+            background-color: #218838;
+        }
+
+        .thank-you-message {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 24px;
+            color: #28a745;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="survey-container">
+        <h1>Buffalo Transportation Survey</h1>
+
+        <!-- Display Thank You Message if applicable -->
+        {% if thank_you %}
+            <div class="thank-you-message">Thank you for your participation!</div>
+        {% else %}
+            <!-- Language Selection -->
+            <label for="language">Select Language for Questions:</label>
+            <select id="language">
+                <option value="en-US">English</option>
+                <option value="es-ES">Spanish</option>
+            </select>
+
+            <form action="/submit_survey" method="POST">
+                <!-- First Survey Question -->
+                <div class="question">
+                    <label for="question1" id="question1-label">1. Do you support the mobility initiative that Clementine Golden Group has taken?</label>
+                    <button type="button" id="read-question1">Read Question</button>
+                    <input type="text" id="question1" name="question1" placeholder="Your answer" required>
+                    <button type="button" id="start-recording1">Answer with Voice</button>
+                    <span id="voice-result1"></span>
+                </div>
+
+                <!-- Second Survey Question -->
+                <div class="question">
+                    <label for="question2" id="question2-label">2. How was your experience in transportation in Buffalo?</label>
+                    <button type="button" id="read-question2">Read Question</button>
+                    <input type="text" id="question2" name="question2" placeholder="Your answer" required>
+                    <button type="button" id="start-recording2">Answer with Voice</button>
+                    <span id="voice-result2"></span>
+                </div>
+
+                <button type="submit" class="submit-btn">Submit</button>
+            </form>
+        {% endif %}
+    </div>
+
+    <script>
+        // Questions Text
+        var question1Text = {
+            'en-US': "Do you support the mobility initiative that Clementine Golden Group has taken?",
+            'es-ES': "¿Apoya la iniciativa de movilidad que ha tomado el Grupo Clementine Golden?",
+        };
+
+        var question2Text = {
+            'en-US': "How was your experience in transportation in Buffalo?",
+            'es-ES': "¿Cómo fue su experiencia en el transporte en Buffalo?",
+        };
+
+        // Function to read the question in selected language
+        function readQuestion(questionText) {
+            var selectedLanguage = document.getElementById('language').value;
+            var msg = new SpeechSynthesisUtterance(questionText[selectedLanguage]);
+            msg.lang = selectedLanguage; // Set the language of the speech
+            window.speechSynthesis.speak(msg);
+        }
+
+        // Event listeners for reading questions
+        document.getElementById('read-question1').addEventListener('click', function() {
+            readQuestion(question1Text);
+        });
+
+        document.getElementById('read-question2').addEventListener('click', function() {
+            readQuestion(question2Text);
+        });
+
+        // Speech-to-Text (voice input)
+        var recognition1 = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        var recognition2 = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        var recording1 = false;
+        var recording2 = false;
+
+        // Function to start voice input
+        function startRecording(recognition, voiceResultId) {
+            recognition.start();
+            recording = true;
+            document.getElementById(voiceResultId).textContent = 'Listening...';
+        }
+
+        // Start voice input for question 1
+        document.getElementById('start-recording1').addEventListener('click', function() {
+            if (!recording1) {
+                startRecording(recognition1, 'voice-result1');
+            } else {
+                recognition1.stop();
+            }
+        });
+
+        // Capture result for question 1
+        recognition1.onresult = function(event) {
+            var transcript = event.results[0][0].transcript;
+            document.getElementById('question1').value = transcript;
+            document.getElementById('voice-result1').textContent = 'You said: ' + transcript;
+            recording1 = false;
+        };
+
+        // Start voice input for question 2
+        document.getElementById('start-recording2').addEventListener('click', function() {
+            if (!recording2) {
+                startRecording(recognition2, 'voice-result2');
+            } else {
+                recognition2.stop();
+            }
+        });
+
+        // Capture result for question 2
+        recognition2.onresult = function(event) {
+            var transcript = event.results[0][0].transcript;
+            document.getElementById('question2').value = transcript;
+            document.getElementById('voice-result2').textContent = 'You said: ' + transcript;
+            recording2 = false;
+        };
+
+        // Handle recognition errors
+        recognition1.onerror = recognition2.onerror = function(event) {
+            console.error('Speech recognition error:', event.error);
+            document.getElementById('voice-result1').textContent = 'Error during recognition. Please try again.';
+            document.getElementById('voice-result2').textContent = 'Error during recognition. Please try again.';
+            recording1 = false;
+            recording2 = false;
+        };
+
+        // Update questions and input fields based on selected language
+        document.getElementById('language').addEventListener('change', function() {
+            var selectedLanguage = this.value;
+            if (selectedLanguage === 'en-US') {
+                document.getElementById('question1-label').innerText = question1Text['en-US'];
+                document.getElementById('question2-label').innerText = question2Text['en-US'];
+                document.getElementById('question1').placeholder = "Your answer";
+                document.getElementById('question2').placeholder = "Your answer";
+            } else {
+                document.getElementById('question1-label').innerText = question1Text['es-ES'];
+                document.getElementById('question2-label').innerText = question2Text['es-ES'];
+                document.getElementById('question1').placeholder = "Tu respuesta";
+                document.getElementById('question2').placeholder = "Tu respuesta";
+            }
+        });
+    </script>
+</body>
+</html>
